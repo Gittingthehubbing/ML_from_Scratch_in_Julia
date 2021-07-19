@@ -1,22 +1,26 @@
 using LinearAlgebra
 using DelimitedFiles
 using Plots
+
+wd = pwd()
+if ~occursin(wd).("Basic_Gradient_Descent_Julia")
+    cd("$(wd)/Basic_Gradient_Descent_Julia")
+end
+
 include("costfunc.jl")
 include("gradDesc.jl")
 
 #set up data to be fitted
 weight = .5;
 bias = 0.7;
-noise = 2;
-epochs = 3;
-lr = 0.001;
+noise = 0.05;
+epochs = 1500;
+lr = 0.03;
 
 
-x = 1:1:100
+x = 0:.05:1
 f(x,weight,bias) = weight*x .+ bias 
 y = f(x,weight,bias) + randn(size(x,1)).*noise
-# plot data
-plot(x,y, seriestype=:scatter)
 
 #add bias column to X matrix
 X = [ones(size(x,1)) x];
@@ -31,10 +35,12 @@ initialCost = costfunc(X, y, theta)
 opt_theta, costHist = gradDesc(X,y,theta,lr,epochs);
 
 #plot cost over epochs
-plot(1:epochs,costHist)
+p2=plot(1:epochs,costHist,ylabel="Cost", xlabel = "Epochs", lw = 3, title = "Cost History")
 
 # compute fitted line
 y_predict = f(x, opt_theta[1], opt_theta[2]);
 
 #plot fit
-plot(x,y_predict, seriestype=:scatter)
+p1=plot(x,y,ylabel="y", xlabel = "x", seriestype=:scatter,label="Data")
+plot!(x,y_predict,lw=5, seriestype=:line,label="Prediction")
+plot(p1,p2,layout=(2,1))

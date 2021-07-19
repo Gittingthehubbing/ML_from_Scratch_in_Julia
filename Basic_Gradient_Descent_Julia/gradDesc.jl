@@ -4,8 +4,8 @@ function gradDesc(X,y,theta, lr, epochs)
 
     for iter = 1:epochs
 
-        gradJ = lr/m * X'*(X*theta - y)
-        theta = theta - gradJ
+        gradJ = 1/m * X'*(X*theta - y)
+        theta = theta - lr * gradJ
         Jloop = costfunc(X,y,theta)
         J_history[iter] = Jloop
 
