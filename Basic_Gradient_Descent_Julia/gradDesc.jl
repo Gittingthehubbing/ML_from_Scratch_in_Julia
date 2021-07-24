@@ -1,7 +1,6 @@
 function gradDesc(X,y,theta, lr, epochs)
     m=size(y,1)
     J_history = zeros(epochs, 1)
-
     for iter = 1:epochs
 
         gradJ = 1/m * X'*(X*theta - y)
