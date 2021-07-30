@@ -19,41 +19,50 @@ for i = 1:size(x,1)
     append!(descLineY,f(x[i,:],a,b))
 end
 
-radomPoints = rand(100,2);
+radomPoints = rand(size(x,1),2);
 
-classes = copy(radomPoints);
-classes[:,2] .= 0;
+classes = copy(radomPoints[:,2]);
+classes .= 0;
 i=1;
 for i=1:size(radomPoints,1)
     xTemp = hcat(radomPoints[i,1],1);
     yTemp = radomPoints[i,2];
     yFunc = f(xTemp,a,b);
     if yTemp > yFunc
-        classes[i,2]=1;
+        classes[i]=1;
     end
 end
 
-boolIdx = classes[:,2].==1;
+boolIdx = classes .==1;
 
 
-plot(x[:,1],descLineY,show=true)
-plot!(radomPoints[boolIdx,1],radomPoints[boolIdx,2],seriestype=:scatter)
-plot!(radomPoints[.!boolIdx,1],radomPoints[.!boolIdx,2],seriestype=:scatter)
+plot(x[:,1],descLineY,show=true);
+plot!(radomPoints[boolIdx,1],radomPoints[boolIdx,2],seriestype=:scatter);
+plot!(radomPoints[.!boolIdx,1],radomPoints[.!boolIdx,2],seriestype=:scatter);
 
-function sig(x)
-    1/(1 .+exp(-1*x));
+function sig(yPred)
+    1 ./ (1 .+exp.(-1*yPred));
 end
 
 function cost(x,y,theta)
     m = size(x,1);
-    mean(-y * log(sig(theta'*x))-(1 .-y)*log(1-sig(theta' * x)));
+    mean(-y .* log.(sig(x*theta)) .-(1 .-y) .*log.(1 .-sig(x*theta)));
 end
 
 function grad(x,y,theta)
-    mean((sig(theta' *x) .- y)*x)
+    1/size(y,1) .*(x' *(sig(x*theta) .- y));
 end
 
-thetaInit = rand(2,1);
+theta = rand(2);
 
-costInit = cost(x,classes, thetaInit)
-gradInit = grad(x,classes,theta)
+epochs = 1000;
+lr=1e-1;
+losses = ones(0);
+for e in range(1,stop=epochs,step=1)
+    loss = cost(x,classes,theta);
+    append!(losses,loss);
+    grads = grad(x,classes,theta);
+    theta = theta .- lr .* grads 
+end
+
+plot(range(1,stop=epochs,step=1),losses,show=true)
