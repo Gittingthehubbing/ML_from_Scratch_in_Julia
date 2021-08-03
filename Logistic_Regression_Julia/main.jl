@@ -19,26 +19,24 @@ for i = 1:size(x,1)
     append!(descLineY,f(x[i,:],a,b))
 end
 
-radomPoints = rand(size(x,1),2);
+radomPoints = rand(size(x,1));
 
-classes = copy(radomPoints[:,2]);
+classes = copy(radomPoints);
 classes .= 0;
 i=1;
 for i=1:size(radomPoints,1)
-    xTemp = hcat(radomPoints[i,1],1);
-    yTemp = radomPoints[i,2];
-    yFunc = f(xTemp,a,b);
-    if yTemp > yFunc
+    yFunc = f(x[i,:],a,b)
+    if radomPoints[i] > yFunc
         classes[i]=1;
     end
+    
+    println(i,x[i,:],yFunc)
 end
 
 boolIdx = classes .==1;
-
-
-plot(x[:,1],descLineY,show=true);
-plot!(radomPoints[boolIdx,1],radomPoints[boolIdx,2],seriestype=:scatter);
-plot!(radomPoints[.!boolIdx,1],radomPoints[.!boolIdx,2],seriestype=:scatter);
+plot(x[:,1],descLineY,show=true)
+plot!(x[boolIdx,1],radomPoints[boolIdx],seriestype=:scatter,show=true)
+plot!(x[.!boolIdx,1],radomPoints[.!boolIdx],seriestype=:scatter,show=true)
 
 function sig(yPred)
     1 ./ (1 .+exp.(-1*yPred));
@@ -66,3 +64,8 @@ for e in range(1,stop=epochs,step=1)
 end
 
 plot(range(1,stop=epochs,step=1),losses,show=true)
+
+prediction = round.(sig(x*theta))
+accuracy = sum(prediction.==classes)/size(classes,1)
+
+println("Accuracy for training data is $(accuracy)")
