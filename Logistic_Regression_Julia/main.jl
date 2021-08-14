@@ -42,7 +42,7 @@ num_data_points = 51;
 points_min = -0.5
 points_max = 1
 
-m_c = Array{Float32}([0.3,0.5,-0.15])';
+m_c = Array{Float32}([0.3,0.8,-0.12])';
 
 x_c = ones(num_data_points,2);
 x_c[:,1] = range(points_min,points_max,length=num_data_points);
@@ -90,18 +90,6 @@ for i=1:size(randomPoints,1)
     end
 end
 
-boolIdx_c = classes_c .==1;
-
-p = contour(x_c[:,1] ,x_c[:,2] ,Z_c,levels=[0]) # second axis showing is colorbar
-plot!(x[boolIdx_c,1],randomPoints[boolIdx_c],seriestype=:scatter,show=true)
-plot!(x[.!boolIdx_c,1],randomPoints[.!boolIdx_c],seriestype=:scatter,show=true)
-
-
-boolIdx = classes .==1;
-plot(x[:,1],descLineY,show=true)
-plot!(x[boolIdx,1],randomPoints[boolIdx],seriestype=:scatter,show=true)
-plot!(x[.!boolIdx,1],randomPoints[.!boolIdx],seriestype=:scatter,show=true)
-
 # create polynomial features for non-linear descLine
 
 deg = 3
@@ -135,6 +123,12 @@ accuracy = sum(prediction.==classes)/size(classes,1);
 
 println("Accuracy for linear training data is $(accuracy)")
 
+
+boolIdx = classes .==1;
+plot(x[:,1],descLineY);
+plot!(x[boolIdx,1],randomPoints[boolIdx],seriestype=:scatter);
+plot!(x[.!boolIdx,1],randomPoints[.!boolIdx],seriestype=:scatter,show=true)
+
 theta_c =rand(size(x_poly,2));
 losses_c = ones(0);
 lambda = 1e-2; # regularization term
@@ -152,3 +146,15 @@ prediction_c = round.(sig(x_poly*theta_c));
 accuracy_c = sum(prediction_c.==classes_c)/size(classes_c,1);
 
 println("Accuracy for circular training data is $(accuracy_c)")
+
+
+boolIdx_c = classes_c .==1;
+
+p = contour(x_c[:,1] ,x_c[:,2] ,Z_c,levels=[0]); # second axis showing is colorbar
+plot!(x_c[boolIdx_c,1],randomPoints[boolIdx_c],seriestype=:scatter);
+plot!(x_c[.!boolIdx_c,1],randomPoints[.!boolIdx_c],seriestype=:scatter,show=true)
+
+boolHits = prediction_c .== 1;
+p2 = contour(x_c[:,1] ,x_c[:,2] ,Z_c,levels=[0]); 
+plot!(x_c[boolHits,1],randomPoints[boolHits],seriestype=:scatter,label ="Predicted outside",lw=4)
+plot!(x_c[.!boolHits,1],randomPoints[.!boolHits],seriestype=:scatter,label ="Predicted inside",lw=3)
