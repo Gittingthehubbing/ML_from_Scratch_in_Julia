@@ -25,7 +25,8 @@ function grad(x,y,theta)
 end
 
 function cost_grad_reg(x,y,theta,lambda)
-    cost_reg = mean(-y .* log.(sig(x*theta)) .- (1 .- y) .*log.(1 .- sig(x*theta))) + lambda ./(2*size(x,1)) * sum(theta[2:end].^2);
+    prediction = sig(x*theta)
+    cost_reg = mean(-y .* log.(prediction) .- (1 .- y) .*log.(1 .- prediction)) + lambda ./(2*size(x,1)) * sum(theta[2:end].^2);
     # grad for bias term
     grad1 = mean((sig(x*theta) .- y) .* x[:,1],dims=1)
     #grad for rest of theta
@@ -34,15 +35,20 @@ function cost_grad_reg(x,y,theta,lambda)
     return (cost_reg, grad_full)
 end
 
+function main() #somewhat lazy way to avoid global scope issue in for loops
 
 a = -1;
 b= 0.2;
 
-num_data_points = 51;
-points_min = -0.5
-points_max = 1
+num_data_points = 50;
+points_min = -1.5
+points_max = 2
+normalize_non_lin_data = true
 
-m_c = Array{Float32}([0.3,0.8,-0.12])';
+plot_dir = "plots"
+mkpath(plot_dir)
+
+m_c = Array{Float32}([1.2,1.1,-0.8])';
 
 x_c = ones(num_data_points,2);
 x_c[:,1] = range(points_min,points_max,length=num_data_points);
@@ -67,13 +73,9 @@ for i = 1:size(x,1)
     append!(descLineY,f(x[i,:]',a,b))
 end
 
-randomPoints = rand(size(x,1));
-randomPoints .-= minimum(randomPoints);
-randomPoints ./= maximum(randomPoints)
-randomPoints = (randomPoints .+ points_min) .* points_max;
+randomPoints = rand(points_min:0.1:points_max,size(x,1));
 
-classes = copy(randomPoints);
-classes .= 0;
+classes = rand(0:1:1,size(randomPoints,1));
 classes_c = copy(classes);
 i=1;
 for i=1:size(randomPoints,1)
@@ -82,32 +84,47 @@ for i=1:size(randomPoints,1)
     y_c = f_circle(x_c_temp,m_c)[1]
     if randomPoints[i] > yFunc
         classes[i]=1;
+    else
+        classes[i]=0;
     end
     if y_c < 0
-        classes_c[i]=0
-    else
         classes_c[i]=1
+    else
+        classes_c[i]=0
     end
 end
 
 # create polynomial features for non-linear descLine
 
-deg = 3
-x_poly = hcat(ones(size(x_c,1)),copy(x_c))
-num = 1
+deg = 6
+#x_poly = hcat(ones(size(x_c,1)),copy(x_c))
+x_poly = ones(size(x_c,1));
+#num = 1 #this does not work
+num = ones(1) # avoids issue of global scope
 for d = 1:deg
     for v = 0:d
-        x_poly=hcat(x_poly, x_c[:,1] .^(d-v) .*x_c[:,2] .^v)
-        num+=1
+        x_poly = hcat(x_poly, x_c[:,1] .^(d-v) .*x_c[:,2] .^v);
+        num[1]+=1
     end
 end
 
-
+#Normalisation
+if normalize_non_lin_data
+    colMeanList = zeros(0);
+    colStdList = zeros(0);
+    for col in range(1,size(x_poly,2),step=1)
+        xMeanC = mean(x_poly[:,col])
+        xStd = std(x_poly[:,col])
+        append!(colMeanList,xMeanC)
+        append!(colStdList,xStd)
+        x_poly[:,col] .-= xMeanC
+        x_poly[:,col] ./= (xStd+1e-8) #in case of zeros
+    end
+end
 theta = rand(2);
 
-
-epochs = 1000;
-lr=1e-1;
+epochs = 10;
+lr=1e-2;
 losses = ones(0);
 for e in range(1,stop=epochs,step=1)
     loss = cost(x,classes,theta);
@@ -128,10 +145,11 @@ boolIdx = classes .==1;
 plot(x[:,1],descLineY);
 plot!(x[boolIdx,1],randomPoints[boolIdx],seriestype=:scatter);
 plot!(x[.!boolIdx,1],randomPoints[.!boolIdx],seriestype=:scatter,show=true)
+savefig("$(plot_dir)/Linear-Target.png")
 
-theta_c =rand(size(x_poly,2));
+theta_c =rand(size(x_poly,2))./10;
 losses_c = ones(0);
-lambda = 1e-2; # regularization term
+lambda = 1e-1; # regularization term
 
 for e in range(1,stop=epochs,step=1)
     (c,g) = cost_grad_reg(x_poly,classes_c,theta_c,lambda);
@@ -140,7 +158,8 @@ for e in range(1,stop=epochs,step=1)
 end
 
 
-plot(range(1,stop=epochs,step=1),losses_c,show=true)
+plot(range(1,stop=epochs,step=1),losses_c,yaxis=:log,show=false)
+savefig("$(plot_dir)/Non-linear-losses.png")
 
 prediction_c = round.(sig(x_poly*theta_c));
 accuracy_c = sum(prediction_c.==classes_c)/size(classes_c,1);
@@ -153,8 +172,15 @@ boolIdx_c = classes_c .==1;
 p = contour(x_c[:,1] ,x_c[:,2] ,Z_c,levels=[0]); # second axis showing is colorbar
 plot!(x_c[boolIdx_c,1],randomPoints[boolIdx_c],seriestype=:scatter);
 plot!(x_c[.!boolIdx_c,1],randomPoints[.!boolIdx_c],seriestype=:scatter,show=true)
+savefig("$(plot_dir)/Non-Linear-Target.png")
 
 boolHits = prediction_c .== 1;
 p2 = contour(x_c[:,1] ,x_c[:,2] ,Z_c,levels=[0]); 
 plot!(x_c[boolHits,1],randomPoints[boolHits],seriestype=:scatter,label ="Predicted outside",lw=4)
 plot!(x_c[.!boolHits,1],randomPoints[.!boolHits],seriestype=:scatter,label ="Predicted inside",lw=3)
+savefig("$(plot_dir)/Non-Linear-hits.png")
+
+println("All done")
+end
+
+main()
