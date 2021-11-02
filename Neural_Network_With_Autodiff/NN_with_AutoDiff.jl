@@ -1,7 +1,7 @@
 using Zygote
 using Plots
 using Statistics
-
+function main()
 f(x,a,b) = a*x + b
 loss(yTrue,yPred) = sqrt((yTrue-yPred)^2)
 
@@ -118,4 +118,5 @@ linePredVec = fVec(xValsVecTr, aPred,bPred)
 plot(1:lengthLine,transform(noisyLine),seriestype = :scatter,label="noisyLine")
 plot!(1:lengthLine, transform(line),label="lineTrue Tr")
 plot!(1:lengthLine, linePredVec,label="linePred",legend=:topleft)
-
+end
+main()
